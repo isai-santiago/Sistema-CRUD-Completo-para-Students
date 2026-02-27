@@ -1,0 +1,37 @@
+{
+	"info": {
+		"name": "Student CRUD API",
+		"description": "Colección completa para probar el sistema de gestión de estudiantes.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Obtener Estadísticas",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": { "raw": "http://localhost:3000/api/v1/students/stats", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api", "v1", "students", "stats"] }
+			}
+		},
+		{
+			"name": "2. Obtener Todos (Paginado)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": { "raw": "http://localhost:3000/api/v1/students?page=1&limit=5", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api", "v1", "students"], "query": [ { "key": "page", "value": "1" }, { "key": "limit", "value": "5" } ] }
+			}
+		},
+		{
+			"name": "3. Crear Estudiante",
+			"request": {
+				"method": "POST",
+				"header": [ { "key": "Content-Type", "value": "application/json" } ],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"Isai Santiago\",\n    \"email\": \"isai@ejemplo.com\",\n    \"group\": \"Backend-Pro\",\n    \"isActive\": true,\n    \"tags\": [\"node\", \"express\"]\n}"
+				},
+				"url": { "raw": "http://localhost:3000/api/v1/students", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api", "v1", "students"] }
+			}
+		}
+	]
+}

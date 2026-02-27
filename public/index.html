@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Pro Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: '#0f172a',
+                        darker: '#020617',
+                        primary: '#6366f1',
+                        accent: '#14b8a6'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; }
+        
+        /* Animación de entrada suave */
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Scrollbar personalizada */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <nav class="bg-darker border-b border-slate-800 p-4 shadow-lg sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-primary p-2 rounded-lg shadow-lg shadow-primary/30">
+                    <i class="fa-solid fa-graduation-cap text-white text-xl"></i>
+                </div>
+                <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
+                    Nexus Students API
+                </h1>
+            </div>
+            <div class="flex space-x-4">
+                <a href="/api-docs" target="_blank" class="text-slate-400 hover:text-white transition-colors duration-300 flex items-center gap-2">
+                    <i class="fa-solid fa-book"></i> Ver API Swagger
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-grow max-w-7xl mx-auto w-full p-6 fade-in">
+        
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8" id="stats-container">
+            </div>
+
+        <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-xl mb-6 flex flex-wrap gap-4 items-center justify-between">
+            <div class="flex flex-1 gap-4">
+                <div class="relative w-full max-w-md">
+                    <i class="fa-solid fa-search absolute left-3 top-3.5 text-slate-400"></i>
+                    <input type="text" id="searchInput" placeholder="Buscar por nombre, email, tag..." 
+                           class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg pl-10 pr-4 py-2.5 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all">
+                </div>
+                <button onclick="buscarEstudiantes()" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg transition-colors">
+                    Buscar
+                </button>
+                <button onclick="limpiarFiltros()" class="text-slate-400 hover:text-white px-4 py-2 transition-colors">
+                    Limpiar
+                </button>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="window.open('/api/v1/students/export/csv')" class="flex items-center gap-2 bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600/30 px-4 py-2.5 rounded-lg transition-all">
+                    <i class="fa-solid fa-download"></i> Exportar CSV
+                </button>
+                <button onclick="abrirModal()" class="flex items-center gap-2 bg-primary hover:bg-indigo-400 text-white px-5 py-2.5 rounded-lg shadow-lg shadow-primary/30 transition-all hover:-translate-y-1">
+                    <i class="fa-solid fa-plus"></i> Nuevo Estudiante
+                </button>
+            </div>
+        </div>
+
+        <div class="bg-slate-800 rounded-xl border border-slate-700 shadow-2xl overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full whitespace-nowrap">
+                    <thead class="bg-slate-900/50 text-slate-300 text-xs uppercase tracking-wider">
+                        <tr>
+                            <th class="px-6 py-4 text-left">Estudiante</th>
+                            <th class="px-6 py-4 text-left">Contacto</th>
+                            <th class="px-6 py-4 text-left">Grupo & Tags</th>
+                            <th class="px-6 py-4 text-center">Estado</th>
+                            <th class="px-6 py-4 text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-estudiantes" class="divide-y divide-slate-700">
+                        </tbody>
+                </table>
+            </div>
+            
+            <div class="bg-slate-800 px-6 py-4 border-t border-slate-700 flex items-center justify-between">
+                <span class="text-sm text-slate-400" id="paginacion-info">Cargando...</span>
+                <div class="flex gap-2">
+                    <button id="btn-prev" onclick="cambiarPagina(-1)" class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"><i class="fa-solid fa-chevron-left"></i></button>
+                    <button id="btn-next" onclick="cambiarPagina(1)" class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="modal-estudiante" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center z-50">
+        <div class="bg-slate-800 p-8 rounded-2xl w-full max-w-md border border-slate-700 shadow-2xl fade-in relative">
+            <button onclick="cerrarModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white"><i class="fa-solid fa-times text-xl"></i></button>
+            <h2 id="modal-title" class="text-2xl font-bold mb-6 text-white">Nuevo Estudiante</h2>
+            
+            <form id="form-estudiante" onsubmit="guardarEstudiante(event)">
+                <input type="hidden" id="estudiante-id">
+                <div class="space-y-4 text-sm text-slate-300">
+                    <div>
+                        <label class="block mb-1">Nombre Completo</label>
+                        <input type="text" id="input-name" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 focus:border-primary outline-none">
+                    </div>
+                    <div>
+                        <label class="block mb-1">Correo Electrónico</label>
+                        <input type="email" id="input-email" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 focus:border-primary outline-none">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block mb-1">Grupo</label>
+                            <input type="text" id="input-group" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 focus:border-primary outline-none">
+                        </div>
+                        <div>
+                            <label class="block mb-1">Estado</label>
+                            <select id="input-status" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 focus:border-primary outline-none">
+                                <option value="true">Activo</option>
+                                <option value="false">Inactivo</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block mb-1">Tags (separados por coma)</label>
+                        <input type="text" id="input-tags" placeholder="ej. react, nodejs" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 focus:border-primary outline-none">
+                    </div>
+                    <button type="submit" class="w-full bg-primary hover:bg-indigo-500 text-white font-bold py-3 rounded-lg mt-6 shadow-lg shadow-primary/30 transition-all">
+                        Guardar Datos
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Variables de estado
+        let currentPage = 1;
+        const limit = 10;
+        let currentSearch = '';
+
+        // Función 1: Cargar los paneles de arriba (Stats)
+        async function cargarStats() {
+            try {
+                const res = await fetch('/api/v1/students/stats');
+                const { data } = await res.json();
+                
+                document.getElementById('stats-container').innerHTML = `
+                    <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg hover:-translate-y-1 transition-transform">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-slate-400 text-sm font-semibold uppercase">Total Registrados</p>
+                                <h3 class="text-4xl font-bold text-white mt-2">${data.total}</h3>
+                            </div>
+                            <div class="bg-blue-500/20 p-3 rounded-lg text-blue-400"><i class="fa-solid fa-users text-xl"></i></div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg hover:-translate-y-1 transition-transform">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-slate-400 text-sm font-semibold uppercase">Estudiantes Activos</p>
+                                <h3 class="text-4xl font-bold text-emerald-400 mt-2">${data.active}</h3>
+                            </div>
+                            <div class="bg-emerald-500/20 p-3 rounded-lg text-emerald-400"><i class="fa-solid fa-user-check text-xl"></i></div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg hover:-translate-y-1 transition-transform">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-slate-400 text-sm font-semibold uppercase">Inactivos / Bajas</p>
+                                <h3 class="text-4xl font-bold text-red-400 mt-2">${data.inactive}</h3>
+                            </div>
+                            <div class="bg-red-500/20 p-3 rounded-lg text-red-400"><i class="fa-solid fa-user-xmark text-xl"></i></div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg hover:-translate-y-1 transition-transform flex flex-col justify-center">
+                        <p class="text-slate-400 text-sm font-semibold uppercase mb-2">Grupos Top</p>
+                        <div class="flex gap-2 flex-wrap">
+                            ${Object.keys(data.byGroup).slice(0,3).map(g => `<span class="bg-slate-700 text-xs px-2 py-1 rounded">${g}</span>`).join('')}
+                        </div>
+                    </div>
+                `;
+            } catch (error) { console.error("Error cargando stats"); }
+        }
+
+        // Función 2: Cargar la Tabla con Búsqueda y Paginación
+        async function cargarEstudiantes() {
+            try {
+                // Construimos la URL usando las variables de estado (Aquí estamos usando tu código backend!)
+                let url = `/api/v1/students?page=${currentPage}&limit=${limit}`;
+                if (currentSearch) url += `&search=${encodeURIComponent(currentSearch)}`;
+
+                const res = await fetch(url);
+                const { data, pagination } = await res.json();
+                
+                const tbody = document.getElementById('tabla-estudiantes');
+                tbody.innerHTML = '';
+
+                if (data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-slate-400">No se encontraron estudiantes</td></tr>`;
+                } else {
+                    data.forEach(est => {
+                        // Generamos etiquetas de colores
+                        const tagsHtml = (est.tags || []).map(t => `<span class="bg-slate-700 text-slate-300 px-2 py-0.5 rounded-full text-[10px] mr-1">${t}</span>`).join('');
+                        const estadoHtml = est.isActive 
+                            ? `<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1 rounded-full text-xs font-medium"><i class="fa-solid fa-circle text-[8px] mr-1"></i> Activo</span>`
+                            : `<span class="bg-red-500/10 text-red-400 border border-red-500/20 px-3 py-1 rounded-full text-xs font-medium"><i class="fa-solid fa-circle text-[8px] mr-1"></i> Inactivo</span>`;
+
+                        tbody.innerHTML += `
+                            <tr class="hover:bg-slate-700/50 transition-colors group">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center">
+                                        <div class="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white font-bold shadow-lg">
+                                            ${est.name.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="font-medium text-white">${est.name}</div>
+                                            <div class="text-xs text-slate-400">ID: ${est.id.split('_')[2]}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-slate-400">${est.email}</td>
+                                <td class="px-6 py-4">
+                                    <div class="text-sm font-medium text-accent mb-1">${est.group}</div>
+                                    <div class="flex flex-wrap">${tagsHtml}</div>
+                                </td>
+                                <td class="px-6 py-4 text-center">${estadoHtml}</td>
+                                <td class="px-6 py-4 text-center">
+                                    <div class="flex justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button onclick='editarEstudiante(${JSON.stringify(est)})' class="text-blue-400 hover:text-blue-300 hover:scale-110 transition-transform"><i class="fa-solid fa-pen-to-square text-lg"></i></button>
+                                        <button onclick='borrarEstudiante("${est.id}")' class="text-red-400 hover:text-red-300 hover:scale-110 transition-transform"><i class="fa-solid fa-trash text-lg"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+
+                // Actualizar Paginación UI
+                document.getElementById('paginacion-info').innerText = `Mostrando página ${pagination.page} de ${pagination.pages} (${pagination.total} registros totales)`;
+                document.getElementById('btn-prev').disabled = !pagination.hasPrev;
+                document.getElementById('btn-next').disabled = !pagination.hasNext;
+
+            } catch (error) {
+                console.error("Error cargando tabla:", error);
+            }
+        }
+
+        // Búsqueda
+        function buscarEstudiantes() {
+            currentSearch = document.getElementById('searchInput').value;
+            currentPage = 1;
+            cargarEstudiantes();
+        }
+
+        function limpiarFiltros() {
+            document.getElementById('searchInput').value = '';
+            currentSearch = '';
+            currentPage = 1;
+            cargarEstudiantes();
+        }
+
+        // Paginación
+        function cambiarPagina(delta) {
+            currentPage += delta;
+            cargarEstudiantes();
+        }
+
+        // Modal Logic
+        function abrirModal(esEdicion = false) {
+            document.getElementById('modal-estudiante').classList.remove('hidden');
+            document.getElementById('modal-title').innerText = esEdicion ? 'Editar Estudiante' : 'Registrar Nuevo';
+            if(!esEdicion) document.getElementById('form-estudiante').reset();
+        }
+
+        function cerrarModal() {
+            document.getElementById('modal-estudiante').classList.add('hidden');
+        }
+
+        function editarEstudiante(est) {
+            document.getElementById('estudiante-id').value = est.id;
+            document.getElementById('input-name').value = est.name;
+            document.getElementById('input-email').value = est.email;
+            document.getElementById('input-group').value = est.group;
+            document.getElementById('input-status').value = est.isActive;
+            document.getElementById('input-tags').value = (est.tags || []).join(', ');
+            abrirModal(true);
+        }
+
+        // Función CRUD: Guardar (POST o PUT)
+        async function guardarEstudiante(e) {
+            e.preventDefault();
+            
+            const id = document.getElementById('estudiante-id').value;
+            const payload = {
+                name: document.getElementById('input-name').value,
+                email: document.getElementById('input-email').value,
+                group: document.getElementById('input-group').value,
+                isActive: document.getElementById('input-status').value === "true",
+                tags: document.getElementById('input-tags').value.split(',').map(t => t.trim()).filter(Boolean)
+            };
+
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `/api/v1/students/${id}` : '/api/v1/students';
+
+            try {
+                const res = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const responseData = await res.json();
+
+                if (res.ok) {
+                    cerrarModal();
+                    cargarEstudiantes();
+                    cargarStats();
+                    Swal.fire({
+                        icon: 'success',
+                        title: id ? '¡Actualizado!' : '¡Registrado!',
+                        text: `El estudiante ${payload.name} fue guardado.`,
+                        background: '#1e293b', color: '#fff', confirmButtonColor: '#6366f1'
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error de Validación',
+                        text: responseData.details ? responseData.details.map(d => d.message).join(' | ') : responseData.error,
+                        background: '#1e293b', color: '#fff', confirmButtonColor: '#6366f1'
+                    });
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        // Función CRUD: Borrar (DELETE con animación)
+        function borrarEstudiante(id) {
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: "Esta acción enviará al estudiante a la papelera (Soft Delete).",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Sí, borrar',
+                cancelButtonText: 'Cancelar',
+                background: '#1e293b',
+                color: '#fff'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    await fetch(`/api/v1/students/${id}`, { method: 'DELETE' });
+                    cargarEstudiantes();
+                    cargarStats();
+                    Swal.fire({
+                        title: 'Eliminado',
+                        text: 'El registro ha sido removido.',
+                        icon: 'success',
+                        background: '#1e293b', color: '#fff', confirmButtonColor: '#6366f1'
+                    });
+                }
+            })
+        }
+
+        // Iniciar
+        window.onload = () => {
+            cargarStats();
+            cargarEstudiantes();
+        };
+    </script>
+</body>
+</html>
