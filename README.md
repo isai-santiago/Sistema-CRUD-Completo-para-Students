@@ -8,6 +8,8 @@
 
 Sistema backend profesional para la gestión de estudiantes (CRUD) construido bajo los principios de **Arquitectura Limpia (Clean Architecture)** y separación de responsabilidades. Incluye una interfaz visual (Dashboard), documentación interactiva, y una suite completa de pruebas automatizadas.
 
+link de pagina vivo : https://sistema-crud-completo-para-students.vercel.app
+( se que no pedian hacer lo visual pero queria realizarlo igualmente, dense el gusto de checarlo tambien :D )
 ---
 
 ## 📑 Tabla de Contenidos
